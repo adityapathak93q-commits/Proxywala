@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proxy Suite: free proxies, tested live</title>
+<meta name="description" content="Collect free public proxies, test each one, and keep only the ones that respond. Sorted by anonymity and speed.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231B3FE0'/%3E%3Crect x='3' y='3' width='4' height='4' fill='white'/%3E%3Crect x='9' y='3' width='4' height='4' fill='white' opacity='.45'/%3E%3Crect x='3' y='9' width='4' height='4' fill='white' opacity='.45'/%3E%3Crect x='9' y='9' width='4' height='4' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fog:#E7ECEE; --panel:#F7F9FA; --ink:#10202B; --mute:#56666F; --line:#C5CFD5;
+  --signal:#1B3FE0; --signal-dark:#142FAE;
+  --elite:#13694C; --elite-bg:#D3ECE1;
+  --anon:#7A4F00; --anon-bg:#F4E5C2;
+  --trans:#A3231B; --trans-bg:#F5D9D6;
+  --dead:#CBD4DA;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;background:var(--fog);color:var(--ink);
+  font:400 16px/1.55 "Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+a{color:var(--signal)}
+:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+
+.top{border-bottom:1px solid var(--line);padding:16px 0}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:800;font-size:18px;
+  letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.intro{padding:56px 0 32px}
+h1{margin:0 0 16px;font-size:clamp(2.2rem,6.4vw,4.1rem);line-height:1.02;letter-spacing:-.03em;
+  font-weight:800;max-width:15ch}
+.intro p{margin:0;max-width:52ch;color:var(--mute);font-size:1.075rem}
+
+.console{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tab{appearance:none;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;
+  padding:14px 20px;font:inherit;font-weight:600;color:var(--mute);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--signal)}
+.panel{padding:20px}
+fieldset{border:0;margin:0 0 16px;padding:0}
+legend,.lbl{display:block;font-weight:600;margin-bottom:8px;padding:0}
+.checks{display:flex;flex-wrap:wrap;gap:8px 20px}
+.checks label,.opt{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--signal);margin:0}
+textarea,select,input[type=search]{font:inherit;color:var(--ink);background:#fff;border:1px solid var(--line);
+  border-radius:4px;padding:9px 11px}
+textarea{width:100%;min-height:150px;font-family:var(--mono);font-size:14px;line-height:1.5;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center;margin-top:14px}
+.run{appearance:none;border:0;border-radius:4px;background:var(--signal);color:#fff;font:inherit;
+  font-weight:600;padding:12px 22px;cursor:pointer}
+.run:hover{background:var(--signal-dark)}
+.run:disabled{opacity:.6;cursor:progress}
+.hint{color:var(--mute);font-size:.9rem;margin:0}
+
+.notice{margin:16px 0 0;padding:12px 14px;border-radius:4px;border:1px solid var(--line);background:#fff}
+.notice[data-kind=error]{border-color:var(--trans);background:var(--trans-bg);color:#5c110c}
+
+.progress{margin-top:28px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 36px;align-items:baseline;margin-bottom:14px}
+.stage{font-weight:600;margin:0 0 6px}
+.stat b{font-size:1.6rem;font-weight:800;letter-spacing:-.02em;margin-right:6px}
+.stat span{color:var(--mute)}
+.strip{display:flex;flex-wrap:wrap;gap:3px}
+.cell{width:11px;height:11px;border-radius:2px;box-shadow:inset 0 0 0 1px var(--line)}
+.cell.ok{background:var(--signal);box-shadow:none}
+.cell.no{background:var(--dead);box-shadow:none}
+.legend{display:flex;gap:18px;margin-top:10px;color:var(--mute);font-size:.88rem}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+.results{margin:36px 0 56px}
+.results h2{margin:0 0 4px;font-size:1.5rem;letter-spacing:-.02em}
+.count{color:var(--mute);margin:0 0 16px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;align-items:center}
+.toolbar .grow{flex:1 1 180px;min-width:150px}
+.btn{appearance:none;background:#fff;border:1px solid var(--line);border-radius:4px;color:var(--ink);
+  font:inherit;font-weight:600;font-size:.92rem;padding:8px 12px;cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.exports{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+th{font-weight:600;color:var(--mute);font-size:.9rem;white-space:nowrap}
+th button{appearance:none;background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer}
+th[aria-sort] button{color:var(--ink)}
+th[aria-sort=ascending] button::after{content:" ▲";font-size:.7em}
+th[aria-sort=descending] button::after{content:" ▼";font-size:.7em}
+.addr{appearance:none;background:none;border:0;padding:0;font:500 14px var(--mono);color:var(--ink);
+  cursor:pointer;text-align:left}
+.addr:hover{color:var(--signal);text-decoration:underline}
+.sub{display:block;color:var(--mute);font-size:.85rem}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:2px 9px;border-radius:3px;font-size:.85rem;font-weight:600}
+.badge::before{content:"";width:7px;height:7px;background:currentColor;border-radius:1px}
+.badge.elite{background:var(--elite-bg);color:var(--elite)}
+.badge.anonymous{background:var(--anon-bg);color:var(--anon)}
+.badge.transparent{background:var(--trans-bg);color:var(--trans)}
+.badge.unknown{background:#E1E7EA;color:var(--mute)}
+.empty{padding:28px 20px;color:var(--mute)}
+
+.foot{border-top:1px solid var(--line);padding:24px 0 48px;color:var(--mute);font-size:.9rem}
+.foot p{margin:0 0 8px;max-width:70ch}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:10px 16px;border-radius:4px;font-weight:600;font-size:.92rem;z-index:10}
+.adv{margin:0 0 16px;border:1px solid var(--line);border-radius:4px;background:#fff}
+.adv>summary{cursor:pointer;padding:10px 12px;font-weight:600}
+.adv[open]>summary{border-bottom:1px solid var(--line)}
+.srcbar{display:flex;gap:8px;padding:10px 12px 0}
+.srcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:2px 16px;padding:10px 12px 12px;max-height:280px;overflow:auto}
+.src{display:flex;align-items:center;gap:8px;font-size:.92rem;padding:3px 0;cursor:pointer}
+.src small{margin-left:auto;color:var(--mute)}
+.src.off{opacity:.4;cursor:default}
+.opts{display:flex;flex-wrap:wrap;gap:12px 24px;padding:12px}
+.opts label{display:flex;align-items:center;gap:8px}
+.report{margin-top:16px}
+.report .tablewrap{max-height:320px;overflow:auto;border:0;border-top:1px solid var(--line);border-radius:0}
+.report table{min-width:420px}
+.summary{display:flex;flex-wrap:wrap;gap:8px 32px;margin:0 0 18px}
+.sumitem b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.sumitem span{color:var(--mute);font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+@media (max-width:560px){.intro{padding-top:36px}.tab{padding:12px 14px}.panel{padding:16px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="/">
+    <svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="3" fill="#1B3FE0"/><rect x="3" y="3" width="4" height="4" fill="#fff"/><rect x="9" y="3" width="4" height="4" fill="#fff" opacity=".45"/><rect x="3" y="9" width="4" height="4" fill="#fff" opacity=".45"/><rect x="9" y="9" width="4" height="4" fill="#fff"/></svg>
+    Proxy Suite
+  </a>
+</div></header>
+
+<main class="wrap">
+  <section class="intro">
+    <h1>Find free proxies that actually work.</h1>
+    <p>Pull proxies from about 20 public lists, test every one, and keep only those that respond. Each result shows its speed, how much it hides about you, and where it exits.</p>
+  </section>
+
+  <section class="console" aria-label="Run a test">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-scrape" aria-selected="true" aria-controls="panel-scrape">Find proxies</button>
+      <button class="tab" role="tab" id="tab-check" aria-selected="false" aria-controls="panel-check" tabindex="-1">Test my list</button>
+    </div>
+
+    <div class="panel" id="panel-scrape" role="tabpanel" aria-labelledby="tab-scrape">
+      <fieldset>
+        <legend>Protocols to collect</legend>
+        <div class="checks">
+          <label><input type="checkbox" name="proto" value="http" checked> HTTP</label>
+          <label><input type="checkbox" name="proto" value="socks4" checked> SOCKS4</label>
+          <label><input type="checkbox" name="proto" value="socks5" checked> SOCKS5</label>
+        </div>
+      </fieldset>
+      <details class="adv" id="src-box">
+        <summary id="src-sum">Sources</summary>
+        <div class="srcbar">
+          <button class="btn" type="button" id="src-all">Select all</button>
+          <button class="btn" type="button" id="src-none">Select none</button>
+        </div>
+        <div class="srcgrid" id="srcgrid" role="group" aria-label="Sources"></div>
+      </details>
+      <label class="opt"><input type="checkbox" id="geo-scrape" checked> Look up country and network for each working proxy</label>
+    </div>
+
+    <div class="panel" id="panel-check" role="tabpanel" aria-labelledby="tab-check" hidden>
+      <label class="lbl" for="list">Your proxies, one per line</label>
+      <textarea id="list" spellcheck="false" placeholder="203.0.113.10:8080&#10;socks5://198.51.100.7:1080"></textarea>
+      <div class="row">
+        <label class="opt">Default protocol
+          <select id="default-proto"><option>http</option><option>socks4</option><option>socks5</option></select>
+        </label>
+        <label class="opt"><input type="checkbox" id="geo-check" checked> Look up country and network</label>
+      </div>
+    </div>
+
+    <div class="panel" style="padding-top:0">
+      <details class="adv">
+        <summary>Test options</summary>
+        <div class="opts">
+          <label>Wait per proxy
+            <select id="opt-timeout"><option value="4">4 seconds</option><option value="8" selected>8 seconds</option><option value="12">12 seconds</option></select>
+          </label>
+          <label>Keep
+            <select id="opt-anon"><option value="any">All working proxies</option><option value="anonymous">Anonymous and elite</option><option value="elite">Elite only</option></select>
+          </label>
+          <label>Max to test (Find proxies)
+            <select id="opt-limit"><option value="200">200</option><option value="400">400</option><option value="600" selected>600</option></select>
+          </label>
+        </div>
+      </details>
+      <div class="row" style="margin-top:0">
+        <button class="run" id="run" type="button">Find proxies</button>
+        <p class="hint">Takes about a minute. Most free proxies are dead by the time you test them.</p>
+      </div>
+      <div class="notice" id="notice" role="alert" hidden></div>
+    </div>
+  </section>
+
+  <section class="progress" id="progress" hidden aria-label="Progress">
+    <p class="stage" id="stage" role="status" aria-live="polite"></p>
+    <div class="stats">
+      <div class="stat"><b id="stat-tested">0</b><span>tested</span></div>
+      <div class="stat"><b id="stat-alive">0</b><span>working</span></div>
+    </div>
+    <div class="strip" id="strip" aria-hidden="true"></div>
+    <div class="legend" aria-hidden="true">
+      <span><i style="background:var(--signal)"></i>Working</span>
+      <span><i style="background:var(--dead)"></i>No response</span>
+      <span><i style="box-shadow:inset 0 0 0 1px var(--line)"></i>Waiting</span>
+    </div>
+    <details class="adv report" id="src-report" hidden>
+      <summary id="src-report-sum"></summary>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Source</th><th>Protocol</th><th>Found</th><th>Status</th></tr></thead>
+        <tbody id="src-body"></tbody>
+      </table></div>
+    </details>
+  </section>
+
+  <section class="results" id="results" hidden aria-label="Results">
+    <h2>Working proxies</h2>
+    <p class="count" id="count"></p>
+
+    <div id="has-results">
+      <div class="summary" id="summary"></div>
+      <div class="toolbar">
+        <input class="grow" type="search" id="f-q" placeholder="Search address, country or network" aria-label="Search results">
+        <select id="f-anon" aria-label="Filter by anonymity">
+          <option value="">All anonymity levels</option>
+          <option value="elite">Elite</option>
+          <option value="anonymous">Anonymous</option>
+          <option value="transparent">Transparent</option>
+        </select>
+        <select id="f-proto" aria-label="Filter by protocol">
+          <option value="">All protocols</option>
+          <option>http</option><option>socks4</option><option>socks5</option>
+        </select>
+        <select id="f-country" aria-label="Filter by country"><option value="">All countries</option></select>
+      </div>
+
+      <div class="exports">
+        <button class="btn" type="button" data-export="copy">Copy list</button>
+        <button class="btn" type="button" data-export="txt">Download .txt</button>
+        <button class="btn" type="button" data-export="plain">Download ip:port .txt</button>
+        <button class="btn" type="button" data-export="json">Download .json</button>
+        <button class="btn" type="button" data-export="csv">Download .csv</button>
+        <button class="btn" type="button" data-export="conf">Download proxychains.conf</button>
+        <button class="btn" type="button" data-export="retest">Test these again</button>
+      </div>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr id="thead-row">
+            <th data-key="default"><button type="button">Proxy</button></th>
+            <th data-key="protocol"><button type="button">Protocol</button></th>
+            <th data-key="anonymity"><button type="button">Anonymity</button></th>
+            <th data-key="latency_ms"><button type="button">Speed</button></th>
+            <th data-key="country"><button type="button">Country</button></th>
+            <th data-key="hosting"><button type="button">Network</button></th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty" id="no-match" hidden>No proxies match these filters.</div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot"><div class="wrap">
+  <p><strong>Free public proxies are untrusted.</strong> The operator of each one can read and change what passes through it. Never send passwords, cookies or payment details through them. Use them only on systems you are allowed to test.</p>
+</div></footer>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  const S = { mode: "scrape", jobId: null, rows: [], sortKey: "default", sortDir: 1, stripTotal: 0, stripFilled: 0, failures: 0 };
+  const ANON = { elite: 0, anonymous: 1, transparent: 2, unknown: 3 };
+  const STAGES = {
+    queued: "Starting…",
+    collecting: "Collecting proxies from the public lists…",
+    testing: "Testing every proxy…",
+    locating: "Looking up countries and networks…",
+    done: "Finished."
+  };
+
+  /* ── Tabs ─────────────────────────────────────────────── */
+  function setMode(mode) {
+    S.mode = mode;
+    for (const m of ["scrape", "check"]) {
+      const sel = m === mode;
+      const t = $("#tab-" + m);
+      t.setAttribute("aria-selected", sel);
+      t.tabIndex = sel ? 0 : -1;
+      $("#panel-" + m).hidden = !sel;
+    }
+    if (!$("#run").disabled) $("#run").textContent = mode === "scrape" ? "Find proxies" : "Test my list";
+  }
+  $("#tab-scrape").onclick = () => setMode("scrape");
+  $("#tab-check").onclick = () => setMode("check");
+  $(".tabs").addEventListener("keydown", e => {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const next = S.mode === "scrape" ? "check" : "scrape";
+      setMode(next); $("#tab-" + next).focus();
+    }
+  });
+
+  /* ── Sources picker ───────────────────────────────────── */
+  async function loadSources() {
+    let list = [];
+    try { list = await (await fetch("/api/sources")).json(); } catch {}
+    S.sourceCount = list.length;
+    $("#srcgrid").replaceChildren(...list.map(s => {
+      const l = document.createElement("label"); l.className = "src";
+      const i = document.createElement("input"); i.type = "checkbox"; i.value = s.name; i.checked = true; i.dataset.proto = s.protocol;
+      const t = document.createElement("span"); t.textContent = s.name.replace(/_/g, " ");
+      const p = document.createElement("small"); p.textContent = s.protocol;
+      l.append(i, t, p); return l;
+    }));
+    updateSources();
+  }
+  function updateSources() {
+    const on = new Set($$("input[name=proto]:checked").map(i => i.value));
+    let n = 0;
+    $$("#srcgrid input").forEach(i => {
+      const ok = on.has(i.dataset.proto);
+      i.disabled = !ok; i.closest("label").classList.toggle("off", !ok);
+      if (ok && i.checked) n++;
+    });
+    $("#src-sum").textContent = S.sourceCount ? `Sources (${n} selected)` : "Sources (all)";
+  }
+  $("#srcgrid").addEventListener("change", updateSources);
+  $$("input[name=proto]").forEach(i => i.addEventListener("change", updateSources));
+  $("#src-all").onclick = () => { $$("#srcgrid input:not(:disabled)").forEach(i => i.checked = true); updateSources(); };
+  $("#src-none").onclick = () => { $$("#srcgrid input").forEach(i => i.checked = false); updateSources(); };
+  loadSources();
+
+  /* ── Notices & toast ──────────────────────────────────── */
+  function notice(text, kind) {
+    const n = $("#notice");
+    if (!text) { n.hidden = true; return; }
+    n.textContent = text; n.dataset.kind = kind || "info"; n.hidden = false;
+  }
+  let toastTimer;
+  function toast(text) {
+    const t = $("#toast");
+    t.textContent = text; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.hidden = true; }, 2200);
+  }
+
+  /* ── Run a job ────────────────────────────────────────── */
+  function busy(on) {
+    const b = $("#run");
+    b.disabled = on;
+    b.textContent = on ? "Testing…" : (S.mode === "scrape" ? "Find proxies" : "Test my list");
+  }
+
+  async function start() {
+    notice("");
+    $("#results").hidden = true;
+    const shared = { timeout: +$("#opt-timeout").value, min_anonymity: $("#opt-anon").value };
+    let body;
+    if (S.mode === "scrape") {
+      const sources = $$("#srcgrid input:checked:not(:disabled)").map(i => i.value);
+      if (S.sourceCount && !sources.length) { notice("Select at least one source.", "error"); return; }
+      body = { ...shared, mode: "scrape", protocols: $$("input[name=proto]:checked").map(i => i.value),
+               geo: $("#geo-scrape").checked, limit: +$("#opt-limit").value };
+      if (S.sourceCount) body.sources = sources;
+    } else {
+      body = { ...shared, mode: "check", proxies: $("#list").value, default_protocol: $("#default-proto").value, geo: $("#geo-check").checked };
+    }
+    busy(true);
+    try {
+      const r = await fetch("/api/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "Could not start the run.");
+      S.jobId = j.id; S.stripTotal = 0; S.stripFilled = 0; S.failures = 0;
+      $("#strip").replaceChildren();
+      $("#src-report").hidden = true;
+      $("#progress").hidden = false;
+      poll();
+    } catch (e) {
+      notice(e.message, "error"); busy(false);
+    }
+  }
+  $("#run").onclick = start;
+
+  async function poll() {
+    try {
+      const r = await fetch("/api/jobs/" + S.jobId, { cache: "no-store" });
+      const s = await r.json();
+      if (!r.ok) throw Object.assign(new Error(s.error || "Lost the run."), { fatal: true });
+      S.failures = 0;
+      renderProgress(s);
+      if (s.status === "running") setTimeout(poll, 1000); else finish(s);
+    } catch (e) {
+      if (e.fatal || ++S.failures > 5) { notice(e.fatal ? e.message : "Lost connection to the server. Try again.", "error"); busy(false); }
+      else setTimeout(poll, 1500);
+    }
+  }
+
+  function renderProgress(s) {
+    $("#stage").textContent = STAGES[s.stage] || s.stage;
+    $("#stat-tested").textContent = s.total ? `${s.tested.toLocaleString()} of ${s.total.toLocaleString()}` : (s.collected ? s.collected.toLocaleString() + " found" : "0");
+    $("#stat-alive").textContent = s.alive.toLocaleString();
+    const strip = $("#strip");
+    if (s.total && s.total !== S.stripTotal) {
+      S.stripTotal = s.total; S.stripFilled = 0;
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < s.total; i++) { const c = document.createElement("span"); c.className = "cell"; frag.append(c); }
+      strip.replaceChildren(frag);
+    }
+    for (let i = S.stripFilled; i < s.cells.length && i < strip.children.length; i++) {
+      strip.children[i].className = "cell " + (s.cells[i] === "a" ? "ok" : "no");
+    }
+    S.stripFilled = s.cells.length;
+    renderSources(s.sources);
+  }
+
+  function renderSources(list) {
+    const box = $("#src-report");
+    if (!list || !list.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const ok = list.filter(x => !x.error && x.found > 0).length;
+    $("#src-report-sum").textContent = `Source report: ${ok} of ${list.length} sources returned proxies`;
+    const rows = [...list].sort((a, b) => b.found - a.found || a.name.localeCompare(b.name));
+    $("#src-body").innerHTML = rows.map(x => `<tr><td>${esc(x.name.replace(/_/g, " "))}</td><td>${esc(x.protocol)}</td>` +
+      `<td class="num">${x.found.toLocaleString()}</td><td>${x.error ? esc(x.error) : (x.found ? "OK" : "Empty")}</td></tr>`).join("");
+  }
+
+  function renderSummary() {
+    const rows = S.rows, by = k => rows.filter(r => r.anonymity === k).length;
+    const lat = rows.map(r => r.latency_ms).sort((a, b) => a - b);
+    const ms = v => v == null ? "–" : Math.round(v).toLocaleString() + " ms";
+    const items = [["Elite", by("elite")], ["Anonymous", by("anonymous")], ["Transparent", by("transparent")],
+      ["Fastest", ms(lat[0])], ["Median speed", ms(lat[Math.floor(lat.length / 2)])]];
+    $("#summary").innerHTML = items.map(([k, v]) => `<div class="sumitem"><b>${esc(v)}</b><span>${esc(k)}</span></div>`).join("");
+  }
+
+  function finish(s) {
+    busy(false);
+    if (s.status === "error") { notice(s.error || "Something went wrong.", "error"); return; }
+    if (s.notes && s.notes.length) notice(s.notes.join(" "), "info");
+    S.rows = (s.results || []).map((r, i) => ({ ...r, _i: i }));
+    S.sortKey = "default"; S.sortDir = 1;
+    buildCountries();
+    renderSummary();
+    $("#results").hidden = false;
+    renderTable();
+    $("#results").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+
+  /* ── Results table ────────────────────────────────────── */
+  function buildCountries() {
+    const names = [...new Set(S.rows.map(r => r.country).filter(Boolean))].sort();
+    const sel = $("#f-country");
+    sel.replaceChildren(new Option("All countries", ""), ...names.map(n => new Option(n, n)));
+  }
+
+  function visible() {
+    const q = $("#f-q").value.trim().toLowerCase();
+    const a = $("#f-anon").value, p = $("#f-proto").value, c = $("#f-country").value;
+    const rows = S.rows.filter(r =>
+      (!a || r.anonymity === a) && (!p || r.protocol === p) && (!c || r.country === c) &&
+      (!q || `${r.host}:${r.port} ${r.country || ""} ${r.isp || ""}`.toLowerCase().includes(q)));
+    const k = S.sortKey, d = S.sortDir;
+    rows.sort((x, y) => {
+      let v;
+      if (k === "default") v = x._i - y._i;
+      else if (k === "anonymity") v = (ANON[x.anonymity] ?? 9) - (ANON[y.anonymity] ?? 9) || x.latency_ms - y.latency_ms;
+      else if (k === "latency_ms") v = x.latency_ms - y.latency_ms;
+      else v = String(x[k] ?? "~").localeCompare(String(y[k] ?? "~"));
+      return v * d;
+    });
+    return rows;
+  }
+
+  function renderTable() {
+    const total = S.rows.length;
+    const hasRows = total > 0;
+    $("#has-results").hidden = !hasRows;
+    if (!hasRows) {
+      $("#count").textContent = "None of the proxies responded. Free lists change by the minute, so try again.";
+      return;
+    }
+    const rows = visible();
+    $("#count").textContent = rows.length === total
+      ? `${total.toLocaleString()} working`
+      : `Showing ${rows.length.toLocaleString()} of ${total.toLocaleString()} working`;
+    $("#no-match").hidden = rows.length > 0;
+    $("#tbody").innerHTML = rows.map(r => `
+      <tr>
+        <td><button class="addr" type="button" data-url="${esc(urlOf(r))}" title="Copy ${esc(urlOf(r))}">${esc(r.host)}:${esc(r.port)}</button>
+            ${r.source ? `<span class="sub">${esc(r.source)}</span>` : ""}</td>
+        <td>${esc(r.protocol)}</td>
+        <td><span class="badge ${esc(r.anonymity)}">${esc(cap(r.anonymity))}</span></td>
+        <td class="num">${Math.round(r.latency_ms).toLocaleString()} ms</td>
+        <td>${r.country ? esc(r.country) : "–"}</td>
+        <td>${r.hosting ? esc(cap(r.hosting)) : "–"}${r.isp ? `<span class="sub">${esc(r.isp)}</span>` : ""}</td>
+      </tr>`).join("");
+    $$("#thead-row th").forEach(th => {
+      if (th.dataset.key === S.sortKey) th.setAttribute("aria-sort", S.sortDir === 1 ? "ascending" : "descending");
+      else th.removeAttribute("aria-sort");
+    });
+  }
+
+  const cap = s => s ? s[0].toUpperCase() + s.slice(1) : "";
+
+  $("#thead-row").addEventListener("click", e => {
+    const th = e.target.closest("th"); if (!th) return;
+    const k = th.dataset.key;
+    if (S.sortKey === k) S.sortDir *= -1; else { S.sortKey = k; S.sortDir = 1; }
+    renderTable();
+  });
+  ["#f-q", "#f-anon", "#f-proto", "#f-country"].forEach(id => $(id).addEventListener("input", renderTable));
+
+  $("#tbody").addEventListener("click", e => {
+    const b = e.target.closest(".addr"); if (!b) return;
+    copy(b.dataset.url).then(() => toast("Copied " + b.dataset.url));
+  });
+
+  /* ── Exports (what you see is what you get) ───────────── */
+  function urlOf(p) {
+    const auth = p.username && p.password ? `${encodeURIComponent(p.username)}:${encodeURIComponent(p.password)}@` : "";
+    return `${p.protocol}://${auth}${p.host}:${p.port}`;
+  }
+
+  async function copy(text) {
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const t = document.createElement("textarea");
+      t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+      document.body.append(t); t.select(); document.execCommand("copy"); t.remove();
+    }
+  }
+
+  function download(name, text, type) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  const csvCell = v => {
+    let s = String(v ?? "");
+    if (/^[=+\-@]/.test(s)) s = "'" + s;   // stop spreadsheet formula injection
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+
+  function toCSV(rows) {
+    const cols = ["host", "port", "protocol", "username", "password", "latency_ms", "anonymity", "exit_ip", "country", "country_code", "isp", "asn", "hosting", "source"];
+    return [cols.join(","), ...rows.map(r => cols.map(c => csvCell(r[c])).join(","))].join("\n") + "\n";
+  }
+
+  function toConf(rows) {
+    // random_chain with chain_len=1 uses one working proxy per connection.
+    // strict_chain would route through ALL of them at once, which never works with free proxies.
+    const head = ["# proxychains config generated by Proxy Suite", "random_chain", "chain_len = 1", "proxy_dns",
+      "remote_dns_subnet 224", "tcp_read_time_out 15000", "tcp_connect_time_out 8000", "", "[ProxyList]"];
+    const lines = rows.map(p => `${p.protocol} ${p.host} ${p.port}` + (p.username && p.password ? ` ${p.username} ${p.password}` : ""));
+    return [...head, ...lines].join("\n") + "\n";
+  }
+
+  $(".exports").addEventListener("click", async e => {
+    const b = e.target.closest("[data-export]"); if (!b) return;
+    const rows = visible();
+    if (!rows.length) { toast("Nothing to export"); return; }
+    const kind = b.dataset.export;
+    if (kind === "copy") { await copy(rows.map(urlOf).join("\n")); toast(`Copied ${rows.length.toLocaleString()} proxies`); }
+    else if (kind === "plain") download("proxies-ip-port.txt", rows.map(r => `${r.host}:${r.port}`).join("\n") + "\n", "text/plain");
+    else if (kind === "retest") {
+      $("#list").value = rows.map(urlOf).join("\n");
+      setMode("check"); window.scrollTo({ top: 0, behavior: "smooth" });
+      toast(`Loaded ${rows.length.toLocaleString()} proxies into Test my list`);
+    }
+    else if (kind === "txt") download("proxies.txt", rows.map(urlOf).join("\n") + "\n", "text/plain");
+    else if (kind === "json") download("proxies.json", JSON.stringify(rows.map(({ _i, ...r }) => r), null, 2), "application/json");
+    else if (kind === "csv") download("proxies.csv", toCSV(rows), "text/csv");
+    else if (kind === "conf") download("proxychains.conf", toConf(rows), "text/plain");
+  });
+})();
+</script>
+</body>
+</html>

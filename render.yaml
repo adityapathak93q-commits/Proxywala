@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: proxy-suite
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    # One worker on purpose: jobs live in memory, so every request must hit the same process.
+    startCommand: gunicorn app:app --workers 1 --threads 8 --timeout 120 --bind 0.0.0.0:$PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: MAX_THREADS
+        value: "60"
+      - key: MAX_PROXIES_PER_JOB
+        value: "600"
+      - key: MAX_CONCURRENT_JOBS
+        value: "2"
